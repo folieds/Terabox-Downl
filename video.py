@@ -5,7 +5,7 @@ import asyncio
 import os
 import time
 import logging
-import html
+import html  # Ensure proper escaping for HTML
 
 # Store user downloads count
 user_downloads = {}
@@ -27,26 +27,23 @@ def generate_progress_bar(percentage, length=20):
 async def check_download_limit(user_id, user_mention, reply_msg):
     today = datetime.now().date()
     
-    # Reset daily limit at midnight
     if user_id in user_downloads:
         last_download_date = user_downloads[user_id]["date"]
         if last_download_date != today:
             user_downloads[user_id] = {"count": 0, "date": today}
 
-    # Check if user exceeded the limit
     if user_id in user_downloads and user_downloads[user_id]["count"] >= 3:
-        warning_message = f"""
-<b><blockquote>⚠️ Daily Limit Exceeded</blockquote></b>
+        warning_message = f"""⚠️ *Daily Limit Exceeded*
 
-<i>Hello <a href="tg://user?id={user_id}">{html.escape(user_mention)}</a>,</i>  
-You have already downloaded <b>3 files</b> today.  
-Please wait until <b>Midnight</b> to download again.  
+Hello [{user_mention}](tg://user?id={user_id}),  
+You have already downloaded *3 files* today.  
+Please wait until *Midnight* to download again.  
 
-<b>If You Want To Continue Your Downloading Then Check Out Our Second Bot!!
+If you want to continue downloading, check out our second bot:  
+🤖 @TeraboxVideosRoBot  
 🤖 @TeraboxVideosRoBot
-🤖 @TeraboxVideosRoBot</b>
 """
-        await reply_msg.edit_text(warning_message, parse_mode="HTML")
+        await reply_msg.edit_text(warning_message, parse_mode="Markdown")
         return False
     
     return True
@@ -64,7 +61,7 @@ async def download_video(url, reply_msg, user_mention, user_id):
             raise Exception("Invalid API response format")
 
         fast_download_link = data["downloadLink"]
-        video_title = data["filename"]
+        video_title = html.escape(data["filename"])  # Escape to prevent HTML issues
 
         download = aria2.add_uris([fast_download_link])
         start_time = datetime.now()
@@ -80,26 +77,22 @@ async def download_video(url, reply_msg, user_mention, user_id):
 
             progress_bar = generate_progress_bar(percentage)
 
-            progress_text = f"""
-<b>📂 File Name :</b> <code>{html.escape(video_title)}</code>
-<b>______________________________</b>
-<b>📊 Progress :</b> <code>{percentage:.2f}%</code> | <code>[{progress_bar}]</code>
-<b>📹 Size :</b> <code>{done / (1024 * 1024):.2f}MB / {total_size / (1024 * 1024):.2f}MB</code>
-<b>⚙️ Status :</b> <code><i>Downloading...</i></code>
-<b>🚀 Speed :</b> <code>{speed / (1024 * 1024):.2f} MB/s</code>
-<b>⏳ Elapsed Time :</b> <code>{elapsed_time // 60}m {elapsed_time % 60}s</code>
-<b>⏰ ETA :</b> <code>{eta // 60}m {eta % 60}s</code>
-<b>______________________________</b>
-<b>👤 User :</b> <a href="tg://user?id={user_id}">{html.escape(user_mention)}</a> | <b>📮 ID</b> <code>{user_id}</code>
-<b>______________________________</b>"""
-            await reply_msg.edit_text(progress_text, parse_mode="HTML")
+            progress_text = f"""📂 *File Name:* `{video_title}`
+📊 *Progress:* `{percentage:.2f}%` | [{progress_bar}]
+📹 *Size:* `{done / (1024 * 1024):.2f}MB / {total_size / (1024 * 1024):.2f}MB`
+⚙️ *Status:* _Downloading..._
+🚀 *Speed:* `{speed / (1024 * 1024):.2f} MB/s`
+⏳ *Elapsed Time:* `{elapsed_time // 60}m {elapsed_time % 60}s`
+⏰ *ETA:* `{eta // 60}m {eta % 60}s`
+👤 *User:* [{user_mention}](tg://user?id={user_id}) | 📮 *ID* `{user_id}`
+"""
+            await reply_msg.edit_text(progress_text, parse_mode="Markdown")
             await asyncio.sleep(2)
 
         if download.is_complete:
             file_path = download.files[0].path
-            await reply_msg.edit_text("✅ <b>Download Complete! Uploading...</b>", parse_mode="HTML")
+            await reply_msg.edit_text("✅ *Download Complete! Uploading...*", parse_mode="Markdown")
 
-            # Increment user's download count
             if user_id not in user_downloads:
                 user_downloads[user_id] = {"count": 1, "date": datetime.now().date()}
             else:
@@ -111,7 +104,7 @@ async def download_video(url, reply_msg, user_mention, user_id):
 
     except Exception as e:
         logging.error(f"Error in download_video: {e}")
-        await reply_msg.edit_text("⚠️ <b>Error downloading the video. Please try again later.</b>", parse_mode="HTML")
+        await reply_msg.edit_text("⚠️ *Error downloading the video. Please try again later.*", parse_mode="Markdown")
         return None, None
 
 async def upload_video(client, file_path, video_title, reply_msg, collection_channel_id, user_mention, user_id, message):
@@ -130,19 +123,17 @@ async def upload_video(client, file_path, video_title, reply_msg, collection_cha
             if time.time() - last_update_time > 2:
                 progress_bar = generate_progress_bar(percentage)
 
-                progress_text = f"""
-<b>📂 File Name :</b> <code>{html.escape(video_title)}</code>
-<b>______________________________</b>
-<b>📊 Progress :</b> <code>{percentage:.2f}%</code> | <code>[{progress_bar}]</code>
-<b>📹 Size :</b> <code>{uploaded / (1024 * 1024):.2f}MB / {file_size / (1024 * 1024):.2f}MB</code>
-<b>⚙️ Status :</b> <i>Uploading...</i>
-<b>🚀 Speed :</b> <code>{uploaded / (1024 * 1024) / elapsed_time:.2f} MB/s</code>
-<b>⏳ Elapsed Time :</b> <code>{elapsed_time // 60}m {elapsed_time % 60}s</code>
-<b>______________________________</b>
-<b>👤 User :</b> <a href="tg://user?id={user_id}">{html.escape(user_mention)}</a> | <b>📮 ID</b> <code>{user_id}</code>
-<b>______________________________</b>"""
+                progress_text = f"""📂 *File Name:* `{video_title}`
+📊 *Progress:* `{percentage:.2f}%` | [{progress_bar}]
+📹 *Size:* `{uploaded / (1024 * 1024):.2f}MB / {file_size / (1024 * 1024):.2f}MB`
+⚙️ *Status:* _Uploading..._
+🚀 *Speed:* `{uploaded / (1024 * 1024) / elapsed_time:.2f} MB/s`
+⏳ *Elapsed Time:* `{elapsed_time // 60}m {elapsed_time % 60}s`
+*____________________________*
+👤 *User:* [{user_mention}](tg://user?id={user_id}) | 📮 *ID* `{user_id}`
+"""
                 try:
-                    await reply_msg.edit_text(progress_text, parse_mode="HTML")
+                    await reply_msg.edit_text(progress_text, parse_mode="Markdown")
                     last_update_time = time.time()
                 except Exception as e:
                     logging.warning(f"Error updating progress message: {e}")
@@ -151,7 +142,7 @@ async def upload_video(client, file_path, video_title, reply_msg, collection_cha
             collection_message = await client.send_video(
                 chat_id=collection_channel_id,
                 video=file,
-                caption=f"✨ {html.escape(video_title)}\n👤 Uploaded by : {html.escape(user_mention)}\n📥 User Link: [{html.escape(user_mention)}](tg://user?id={user_id})\n\nJoin : @PythonBotz",
+                caption=f"✨ `{video_title}`\n👤 Uploaded by: [{user_mention}](tg://user?id={user_id})\nJoin: @PythonBotz",
                 progress=progress
             )
 
@@ -167,6 +158,6 @@ async def upload_video(client, file_path, video_title, reply_msg, collection_cha
 
     except Exception as e:
         logging.error(f"Error in upload_video: {e}")
-        await reply_msg.edit_text("⚠️ <b>Error uploading the video. Please try again later.</b>", parse_mode="HTML")
+        await reply_msg.edit_text("⚠️ *Error uploading the video. Please try again later.*", parse_mode="Markdown")
         return None
-                                           
+        
