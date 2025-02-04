@@ -5,6 +5,7 @@ import asyncio
 import os
 import time
 import logging
+import html
 
 # Store user downloads count
 user_downloads = {}
@@ -35,9 +36,9 @@ async def check_download_limit(user_id, user_mention, reply_msg):
     # Check if user exceeded the limit
     if user_id in user_downloads and user_downloads[user_id]["count"] >= 3:
         warning_message = f"""
-<b>⚠️ Daily Limit Exceeded</b>
+<b><blockquote>⚠️ Daily Limit Exceeded</blockquote></b>
 
-<i>Hello <a href="tg://user?id={user_id}">{user_mention}</a>,</i>  
+<i>Hello <a href="tg://user?id={user_id}">{html.escape(user_mention)}</a>,</i>  
 You have already downloaded <b>3 files</b> today.  
 Please wait until <b>Midnight</b> to download again.  
 
@@ -75,21 +76,21 @@ async def download_video(url, reply_msg, user_mention, user_id):
             total_size = download.total_length
             speed = download.download_speed
             eta = int(download.eta.total_seconds()) if isinstance(download.eta, timedelta) else int(download.eta)
-            elapsed_time = (datetime.now() - start_time).total_seconds()
+            elapsed_time = int((datetime.now() - start_time).total_seconds())
 
             progress_bar = generate_progress_bar(percentage)
 
             progress_text = f"""
-<b>📂 File Name :</b> <code>{video_title}</code>
+<b>📂 File Name :</b> <code>{html.escape(video_title)}</code>
 <b>______________________________</b>
 <b>📊 Progress :</b> <code>{percentage:.2f}%</code> | <code>[{progress_bar}]</code>
 <b>📹 Size :</b> <code>{done / (1024 * 1024):.2f}MB / {total_size / (1024 * 1024):.2f}MB</code>
 <b>⚙️ Status :</b> <code><i>Downloading...</i></code>
 <b>🚀 Speed :</b> <code>{speed / (1024 * 1024):.2f} MB/s</code>
-<b>⏳ Elapsed Time :</b> <code>{int(elapsed_time // 60)}m {int(elapsed_time % 60)}s</code>
-<b>⏰ ETA :</b> <code>{int(eta // 60)}m {int(eta % 60)}s</code>
+<b>⏳ Elapsed Time :</b> <code>{elapsed_time // 60}m {elapsed_time % 60}s</code>
+<b>⏰ ETA :</b> <code>{eta // 60}m {eta % 60}s</code>
 <b>______________________________</b>
-<b>👤 User :</b> <a href="tg://user?id={user_id}">{user_mention}</a> | <b>📮 ID</b> <code>{user_id}</code>
+<b>👤 User :</b> <a href="tg://user?id={user_id}">{html.escape(user_mention)}</a> | <b>📮 ID</b> <code>{user_id}</code>
 <b>______________________________</b>"""
             await reply_msg.edit_text(progress_text, parse_mode="HTML")
             await asyncio.sleep(2)
@@ -124,21 +125,21 @@ async def upload_video(client, file_path, video_title, reply_msg, collection_cha
             nonlocal uploaded, last_update_time
             uploaded = current
             percentage = (current / total) * 100
-            elapsed_time = (datetime.now() - start_time).total_seconds()
+            elapsed_time = int((datetime.now() - start_time).total_seconds())
 
             if time.time() - last_update_time > 2:
                 progress_bar = generate_progress_bar(percentage)
 
                 progress_text = f"""
-<b>📂 File Name :</b> <code>{video_title}</code>
+<b>📂 File Name :</b> <code>{html.escape(video_title)}</code>
 <b>______________________________</b>
 <b>📊 Progress :</b> <code>{percentage:.2f}%</code> | <code>[{progress_bar}]</code>
 <b>📹 Size :</b> <code>{uploaded / (1024 * 1024):.2f}MB / {file_size / (1024 * 1024):.2f}MB</code>
-<b>⚙️ Status :</b> <code><i>Uploading...</i></code>
+<b>⚙️ Status :</b> <i>Uploading...</i>
 <b>🚀 Speed :</b> <code>{uploaded / (1024 * 1024) / elapsed_time:.2f} MB/s</code>
-<b>⏳ Elapsed Time :</b> <code>{int(elapsed_time // 60)}m {int(elapsed_time % 60)}s</code>
+<b>⏳ Elapsed Time :</b> <code>{elapsed_time // 60}m {elapsed_time % 60}s</code>
 <b>______________________________</b>
-<b>👤 User :</b> <a href="tg://user?id={user_id}">{user_mention}</a> | <b>📮 ID</b> <code>{user_id}</code>
+<b>👤 User :</b> <a href="tg://user?id={user_id}">{html.escape(user_mention)}</a> | <b>📮 ID</b> <code>{user_id}</code>
 <b>______________________________</b>"""
                 try:
                     await reply_msg.edit_text(progress_text, parse_mode="HTML")
@@ -150,7 +151,7 @@ async def upload_video(client, file_path, video_title, reply_msg, collection_cha
             collection_message = await client.send_video(
                 chat_id=collection_channel_id,
                 video=file,
-                caption=f"✨ {video_title}\n👤 Uploaded by : {user_mention}\n📥 User Link: [{user_mention}](tg://user?id={user_id})\n\nJoin : @PythonBotz",
+                caption=f"✨ {html.escape(video_title)}\n👤 Uploaded by : {html.escape(user_mention)}\n📥 User Link: [{html.escape(user_mention)}](tg://user?id={user_id})\n\nJoin : @PythonBotz",
                 progress=progress
             )
 
@@ -168,4 +169,4 @@ async def upload_video(client, file_path, video_title, reply_msg, collection_cha
         logging.error(f"Error in upload_video: {e}")
         await reply_msg.edit_text("⚠️ <b>Error uploading the video. Please try again later.</b>", parse_mode="HTML")
         return None
-        
+                                           
