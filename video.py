@@ -40,7 +40,7 @@ async def check_download_limit(user_id, reply_msg):
 You have already Downloaded <b>3 files</b> today.  
 Please wait until <b>Midnight</b> to download again.</i>
 
-<b>If you want to Download More Videos Then Check Out Our Second Bot!!
+<b>If You Want To Continue Your Downloading Then Check Out Our Second Bot!!
 🤖 @TeraboxVideosRoBot
 🤖 @TeraboxVideosRoBot</b>
 """
