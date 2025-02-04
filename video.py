@@ -23,7 +23,7 @@ def generate_progress_bar(percentage, length=20):
     remaining = length - completed
     return "█" * completed + "░" * remaining
 
-async def check_download_limit(user_id, reply_msg):
+async def check_download_limit(user_id, user_mention, reply_msg):
     today = datetime.now().date()
     
     # Reset daily limit at midnight
@@ -35,10 +35,11 @@ async def check_download_limit(user_id, reply_msg):
     # Check if user exceeded the limit
     if user_id in user_downloads and user_downloads[user_id]["count"] >= 3:
         warning_message = f"""
-<b><blockquote>⚠️ Daily Limit Exceeded</blockquote></b>
-<i>Hello {user_mention},  
-You have already Downloaded <b>3 files</b> today.  
-Please wait until <b>Midnight</b> to download again.</i>
+<b>⚠️ Daily Limit Exceeded</b>
+
+<i>Hello <a href="tg://user?id={user_id}">{user_mention}</a>,</i>  
+You have already downloaded <b>3 files</b> today.  
+Please wait until <b>Midnight</b> to download again.  
 
 <b>If You Want To Continue Your Downloading Then Check Out Our Second Bot!!
 🤖 @TeraboxVideosRoBot
@@ -51,7 +52,7 @@ Please wait until <b>Midnight</b> to download again.</i>
 
 async def download_video(url, reply_msg, user_mention, user_id):
     try:
-        if not await check_download_limit(user_id, reply_msg):
+        if not await check_download_limit(user_id, user_mention, reply_msg):
             return None, None
 
         response = requests.get(f"https://pika-terabox-dl.vercel.app/?url={url}")
@@ -73,7 +74,7 @@ async def download_video(url, reply_msg, user_mention, user_id):
             done = download.completed_length
             total_size = download.total_length
             speed = download.download_speed
-            eta = download.eta
+            eta = int(download.eta.total_seconds()) if isinstance(download.eta, timedelta) else int(download.eta)
             elapsed_time = (datetime.now() - start_time).total_seconds()
 
             progress_bar = generate_progress_bar(percentage)
@@ -132,11 +133,10 @@ async def upload_video(client, file_path, video_title, reply_msg, collection_cha
 <b>📂 File Name :</b> <code>{video_title}</code>
 <b>______________________________</b>
 <b>📊 Progress :</b> <code>{percentage:.2f}%</code> | <code>[{progress_bar}]</code>
-<b>📹 Size :</b> <code>{done / (1024 * 1024):.2f}MB / {total_size / (1024 * 1024):.2f}MB</code>
+<b>📹 Size :</b> <code>{uploaded / (1024 * 1024):.2f}MB / {file_size / (1024 * 1024):.2f}MB</code>
 <b>⚙️ Status :</b> <code><i>Uploading...</i></code>
-<b>🚀 Speed :</b> <code>{speed / (1024 * 1024):.2f} MB/s</code>
+<b>🚀 Speed :</b> <code>{uploaded / (1024 * 1024) / elapsed_time:.2f} MB/s</code>
 <b>⏳ Elapsed Time :</b> <code>{int(elapsed_time // 60)}m {int(elapsed_time % 60)}s</code>
-<b>⏰ ETA :</b> <code>{int(eta // 60)}m {int(eta % 60)}s</code>
 <b>______________________________</b>
 <b>👤 User :</b> <a href="tg://user?id={user_id}">{user_mention}</a> | <b>📮 ID</b> <code>{user_id}</code>
 <b>______________________________</b>"""
