@@ -35,11 +35,11 @@ async def check_download_limit(user_id, user_mention, reply_msg):
     if user_id in user_downloads and user_downloads[user_id]["count"] >= 3:
         warning_message = f"""⚠️ *Daily Limit Exceeded*
 
-Hello [{user_mention}](tg://user?id={user_id}),  
+Dear [{user_mention}](tg://user?id={user_id}),  
 You have already downloaded *3 files* today.  
 Please wait until *Midnight* to download again.  
 
-If you want to continue downloading, check out our second bot:  
+```If you want to continue downloading, check out our second bot:``` 
 🤖 @TeraboxVideosRoBot  
 🤖 @TeraboxVideosRoBot
 """
